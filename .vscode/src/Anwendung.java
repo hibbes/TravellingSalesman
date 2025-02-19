@@ -1,58 +1,125 @@
-
-import java.awt.*;
 import javax.swing.*;
+import java.awt.*;
 
-public class Anwendung extends JFrame {
-    Stadtliste landNearestNeighbour; // Stadtliste für Nearest Neighbour
-    Stadtliste landNearestInsertion; // Stadtliste für Nearest Insertion
-    Timer timer; // Timer für die Animation
+public class Anwendung {
+
+    // Stadtlisten für beide Verfahren
+    private Stadtliste landNearestNeighbour;
+    private Stadtliste landNearestInsertion;
+
+    // Timer für die Animation
+    private Timer timer;
 
     public Anwendung() {
-        // Initialisiere beide Stadtlisten
+        // ------------------------------------------------------
+        // 1) Stadtlisten erzeugen und die Touren berechnen
+        // ------------------------------------------------------
         landNearestNeighbour = new Stadtliste();
-        landNearestInsertion = new Stadtliste();
-
-        // Berechne die Touren
         landNearestNeighbour.berechneTourNearestNeighbour();
+
+        landNearestInsertion = new Stadtliste();
         landNearestInsertion.berechneTourNearestInsertion();
 
-        // Erstelle das erste Fenster für Nearest Neighbour
-        setSize(1000, 1000);
-        setTitle("TSP: Nearest Neighbour-Methode");
-        setResizable(false);
-        setVisible(true);
+        // ------------------------------------------------------
+        // 2) Erstes Fenster für Nearest Neighbour aufbauen
+        // ------------------------------------------------------
+        JFrame nnFrame = new JFrame("TSP: Nearest Neighbour-Methode");
+        nnFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        nnFrame.setSize(1000, 1000);
 
-        // Erstelle das zweite Fenster für Nearest Insertion
-        JFrame secondFrame = new JFrame();
-        secondFrame.setSize(1000, 1000);
-        secondFrame.setTitle("TSP: Nearest Insertion-Methode");
-        secondFrame.setResizable(false);
-        secondFrame.setVisible(true);
+        // Panel für Nearest Neighbour
+        NearestNeighbourPanel nnPanel = new NearestNeighbourPanel(landNearestNeighbour);
+        nnFrame.add(nnPanel);
 
-        // Timer für die Animation
+        // ------------------------------------------------------
+        // 3) Zweites Fenster für Nearest Insertion aufbauen
+        // ------------------------------------------------------
+        JFrame niFrame = new JFrame("TSP: Nearest Insertion-Methode");
+        niFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        niFrame.setSize(1000, 1000);
+
+        // Panel für Nearest Insertion
+        NearestInsertionPanel niPanel = new NearestInsertionPanel(landNearestInsertion);
+        niFrame.add(niPanel);
+
+        // ------------------------------------------------------
+        // 4) Frames positionieren und sichtbar machen
+        // (damit sie sich nicht überlappen)
+        // ------------------------------------------------------
+        nnFrame.setLocation(100, 100);
+        nnFrame.setVisible(true);
+
+        niFrame.setLocation(nnFrame.getX() + nnFrame.getWidth() + 20, 100);
+        niFrame.setVisible(true);
+
+        // ------------------------------------------------------
+        // 5) Timer für schrittweise Animation
+        // ------------------------------------------------------
         timer = new Timer(1000, e -> {
-            if (landNearestNeighbour.nextStep()) { // Nächster Schritt für Nearest Neighbour
-                repaint(); // Aktualisiere das erste Fenster
+            // Schritt für Nearest Neighbour
+            boolean nnUpdated = landNearestNeighbour.nextStepNearestNeighbour();
+            if (nnUpdated) {
+                nnPanel.repaint();
             }
-            if (landNearestInsertion.nextStep()) { // Nächster Schritt für Nearest Insertion
-                secondFrame.repaint(); // Aktualisiere das zweite Fenster
+
+            // Schritt für Nearest Insertion
+            boolean niUpdated = landNearestInsertion.nextStepNearestInsertion();
+            if (niUpdated) {
+                niPanel.repaint();
             }
-            // Stoppe den Timer, wenn beide Touren vollständig sind
-            if (landNearestNeighbour.isTourComplete() && landNearestInsertion.isTourComplete()) {
+
+            // Wenn beide Touren fertig sind, stoppen wir den Timer
+            if (landNearestNeighbour.isTourCompleteNearestNeighbour()
+                    && landNearestInsertion.isTourCompleteNearestInsertion()) {
                 timer.stop();
             }
         });
+
         timer.start();
     }
 
-    // Methode zum Zeichnen des Fensterinhalts (Nearest Neighbour)
-    public void paint(Graphics g) {
-        super.paint(g);
-        landNearestNeighbour.paint(g);
+    // -----------------------------------------------
+    // Panels als innere Klassen
+    // -----------------------------------------------
+
+    // Panel zum Zeichnen der Nearest-Neighbour-Tour
+    private static class NearestNeighbourPanel extends JPanel {
+        private final Stadtliste stadtliste;
+
+        public NearestNeighbourPanel(Stadtliste stadtliste) {
+            this.stadtliste = stadtliste;
+            setBackground(Color.WHITE);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            // Zeichne die bisherige NN-Tour
+            stadtliste.paintNearestNeighbour(g);
+        }
     }
 
-    // Hauptmethode zum Starten der Anwendung
+    // Panel zum Zeichnen der Nearest-Insertion-Tour
+    private static class NearestInsertionPanel extends JPanel {
+        private final Stadtliste stadtliste;
+
+        public NearestInsertionPanel(Stadtliste stadtliste) {
+            this.stadtliste = stadtliste;
+            setBackground(Color.WHITE);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            // Zeichne die bisherige NI-Tour
+            stadtliste.paintNearestInsertion(g);
+        }
+    }
+
+    // -----------------------------------------------
+    // main-Methode zum Starten der Anwendung
+    // -----------------------------------------------
     public static void main(String[] args) {
-        new Anwendung();
+        SwingUtilities.invokeLater(Anwendung::new);
     }
 }

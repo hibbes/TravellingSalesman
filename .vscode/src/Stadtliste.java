@@ -10,7 +10,7 @@ public class Stadtliste {
     int currentStepNearestInsertion; // Aktueller Schritt für Nearest Insertion
 
     public Stadtliste() {
-        // Initialisiere das Array der Städte mit doppelten Koordinaten
+        // Initialisiere das Array der Städte
         liste = new Stadt[16];
         liste[0] = new Stadt(40, 100);
         liste[1] = new Stadt(80, 300);
@@ -35,6 +35,7 @@ public class Stadtliste {
 
     // Methode zur Berechnung der Tour mit Nearest Neighbour
     public void berechneTourNearestNeighbour() {
+        // Setze alle Städte auf "nicht in Tour"
         for (Stadt stadt : liste) {
             stadt.inTour = false;
         }
@@ -53,6 +54,7 @@ public class Stadtliste {
             currentIndex = nextIndex;
             liste[currentIndex].inTour = true;
         }
+        // Schließe die Tour, indem wir zum Start zurückkehren
         tourNearestNeighbour[anzahl] = tourNearestNeighbour[0];
     }
 
@@ -62,22 +64,28 @@ public class Stadtliste {
             stadt.inTour = false;
         }
         List<Integer> tour = new ArrayList<>();
-        tour.add(0); // Starte bei der ersten Stadt
+
+        // Starte mit einer Stadt, z.B. Index 0
+        tour.add(0);
         liste[0].inTour = true;
 
+        // Solange nicht alle Städte in der Tour sind
         while (tour.size() < liste.length) {
             int nearestCity = -1;
             int insertPosition = -1;
             double minCost = Double.MAX_VALUE;
 
-            // Finde die Stadt mit den geringsten Einfügekosten
+            // Finde die Stadt mit den geringsten Einfügekosten in die bestehende Tour
             for (int i = 0; i < liste.length; i++) {
                 if (liste[i].inTour)
-                    continue;
+                    continue; // schon in Tour, überspringen
+
+                // Probiere alle möglichen Einfügepositionen in "tour" durch
                 for (int j = 0; j < tour.size(); j++) {
                     int cityA = tour.get(j);
                     int cityB = tour.get((j + 1) % tour.size());
-                    double cost = distance(liste[cityA], liste[i]) + distance(liste[i], liste[cityB])
+                    double cost = distance(liste[cityA], liste[i])
+                            + distance(liste[i], liste[cityB])
                             - distance(liste[cityA], liste[cityB]);
                     if (cost < minCost) {
                         minCost = cost;
@@ -87,18 +95,19 @@ public class Stadtliste {
                 }
             }
 
+            // Füge die gefundene Stadt an der besten Position ein
             if (nearestCity != -1) {
                 tour.add(insertPosition, nearestCity);
                 liste[nearestCity].inTour = true;
             }
         }
 
-        // Konvertiere die Tour in ein Array
+        // Konvertiere die Tour (List<Integer>) in ein Array
         tourNearestInsertion = new int[tour.size() + 1];
         for (int i = 0; i < tour.size(); i++) {
             tourNearestInsertion[i] = tour.get(i);
         }
-        tourNearestInsertion[tour.size()] = tour.get(0);
+        tourNearestInsertion[tour.size()] = tour.get(0); // Zurück zum Start
     }
 
     // Methode zum Fortschreiten zum nächsten Schritt (Nearest Neighbour)
@@ -129,6 +138,7 @@ public class Stadtliste {
                 g.drawLine(current.x, current.y, next.x, next.y);
             }
         }
+        // Zeichne alle Städte
         for (Stadt stadt : liste) {
             stadt.paint(g);
         }
@@ -144,6 +154,7 @@ public class Stadtliste {
                 g.drawLine(current.x, current.y, next.x, next.y);
             }
         }
+        // Zeichne alle Städte
         for (Stadt stadt : liste) {
             stadt.paint(g);
         }
