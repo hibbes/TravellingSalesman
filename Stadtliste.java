@@ -1,14 +1,14 @@
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Stadtliste {
-    // Array der Städte
     Stadt[] liste;
-    // Array, das die Reihenfolge der Tour speichert
-    int[] tour;
-    // Aktueller Schritt im Linienaufbau
-    int currentStep;
+    int[] tourNearestNeighbour; // Tour für Nearest Neighbour
+    int[] tourNearestInsertion; // Tour für Nearest Insertion
+    int currentStepNearestNeighbour; // Aktueller Schritt für Nearest Neighbour
+    int currentStepNearestInsertion; // Aktueller Schritt für Nearest Insertion
 
-    // Konstruktor für die Stadtliste
     public Stadtliste() {
         // Initialisiere das Array der Städte mit doppelten Koordinaten
         liste = new Stadt[16];
@@ -29,81 +29,158 @@ public class Stadtliste {
         liste[14] = new Stadt(940, 380);
         liste[15] = new Stadt(920, 840);
 
-        currentStep = 0; // Starte bei Schritt 0
+        currentStepNearestNeighbour = 0;
+        currentStepNearestInsertion = 0;
     }
 
-    // Methode zur Berechnung der Tour mit dem Nearest-Neighbour-Algorithmus
-    public void berechneTour() {
-        // Setze alle Städte als nicht in der Tour enthalten
+    // Methode zur Berechnung der Tour mit Nearest Neighbour
+    public void berechneTourNearestNeighbour() {
         for (Stadt stadt : liste) {
             stadt.inTour = false;
         }
         int anzahl = liste.length;
-        tour = new int[anzahl + 1]; // +1 für die Rückkehr zur Startstadt
+        tourNearestNeighbour = new int[anzahl + 1];
 
-        int currentIndex = 0; // Starte bei der ersten Stadt
-        liste[currentIndex].inTour = true; // Markiere die Startstadt als in der Tour enthalten
-        tour[0] = currentIndex; // Füge die Startstadt zur Tour hinzu
+        int currentIndex = 0;
+        liste[currentIndex].inTour = true;
+        tourNearestNeighbour[0] = currentIndex;
 
-        // Berechne die Tour Schritt für Schritt
         for (int i = 1; i < anzahl; i++) {
-            int nextIndex = findNearestNeighbour(currentIndex); // Finde den nächsten Nachbarn
+            int nextIndex = findNearestNeighbour(currentIndex);
             if (nextIndex == -1)
-                break; // Fallback, falls keine Stadt gefunden wird
-            tour[i] = nextIndex; // Füge den nächsten Nachbarn zur Tour hinzu
-            currentIndex = nextIndex; // Setze den aktuellen Index auf den nächsten Nachbarn
-            liste[currentIndex].inTour = true; // Markiere die Stadt als in der Tour enthalten
+                break;
+            tourNearestNeighbour[i] = nextIndex;
+            currentIndex = nextIndex;
+            liste[currentIndex].inTour = true;
         }
-        tour[anzahl] = tour[0]; // Rückkehr zur Startstadt
+        tourNearestNeighbour[anzahl] = tourNearestNeighbour[0];
     }
 
-    // Methode zum Finden des nächsten Nachbarn
-    private int findNearestNeighbour(int currentIndex) {
-        Stadt current = liste[currentIndex];
-        double minDist = Double.MAX_VALUE; // Initialisiere die minimale Distanz
-        int nearestIndex = -1; // Initialisiere den Index des nächsten Nachbarn
+    // Methode zur Berechnung der Tour mit Nearest Insertion
+    public void berechneTourNearestInsertion() {
+        for (Stadt stadt : liste) {
+            stadt.inTour = false;
+        }
+        List<Integer> tour = new ArrayList<>();
+        tour.add(0); // Starte bei der ersten Stadt
+        liste[0].inTour = true;
 
-        // Durchlaufe alle Städte, um den nächsten Nachbarn zu finden
-        for (int i = 0; i < liste.length; i++) {
-            if (i == currentIndex || liste[i].inTour)
-                continue; // Überspringe die aktuelle Stadt und bereits besuchte Städte
-            double dist = distance(current, liste[i]); // Berechne die Distanz
-            if (dist < minDist) {
-                minDist = dist; // Aktualisiere die minimale Distanz
-                nearestIndex = i; // Aktualisiere den Index des nächsten Nachbarn
+        while (tour.size() < liste.length) {
+            int nearestCity = -1;
+            int insertPosition = -1;
+            double minCost = Double.MAX_VALUE;
+
+            // Finde die Stadt mit den geringsten Einfügekosten
+            for (int i = 0; i < liste.length; i++) {
+                if (liste[i].inTour)
+                    continue;
+                for (int j = 0; j < tour.size(); j++) {
+                    int cityA = tour.get(j);
+                    int cityB = tour.get((j + 1) % tour.size());
+                    double cost = distance(liste[cityA], liste[i]) + distance(liste[i], liste[cityB])
+                            - distance(liste[cityA], liste[cityB]);
+                    if (cost < minCost) {
+                        minCost = cost;
+                        nearestCity = i;
+                        insertPosition = j + 1;
+                    }
+                }
+            }
+
+            if (nearestCity != -1) {
+                tour.add(insertPosition, nearestCity);
+                liste[nearestCity].inTour = true;
             }
         }
-        return nearestIndex; // Gib den Index des nächsten Nachbarn zurück
+
+        // Konvertiere die Tour in ein Array
+        tourNearestInsertion = new int[tour.size() + 1];
+        for (int i = 0; i < tour.size(); i++) {
+            tourNearestInsertion[i] = tour.get(i);
+        }
+        tourNearestInsertion[tour.size()] = tour.get(0);
+    }
+
+    // Methode zum Fortschreiten zum nächsten Schritt (Nearest Neighbour)
+    public boolean nextStepNearestNeighbour() {
+        if (currentStepNearestNeighbour < tourNearestNeighbour.length - 1) {
+            currentStepNearestNeighbour++;
+            return true;
+        }
+        return false;
+    }
+
+    // Methode zum Fortschreiten zum nächsten Schritt (Nearest Insertion)
+    public boolean nextStepNearestInsertion() {
+        if (currentStepNearestInsertion < tourNearestInsertion.length - 1) {
+            currentStepNearestInsertion++;
+            return true;
+        }
+        return false;
+    }
+
+    // Methode zum Zeichnen der Tour (Nearest Neighbour)
+    public void paintNearestNeighbour(Graphics g) {
+        if (tourNearestNeighbour != null && tourNearestNeighbour.length > 1) {
+            g.setColor(Color.BLUE);
+            for (int i = 0; i < currentStepNearestNeighbour; i++) {
+                Stadt current = liste[tourNearestNeighbour[i]];
+                Stadt next = liste[tourNearestNeighbour[i + 1]];
+                g.drawLine(current.x, current.y, next.x, next.y);
+            }
+        }
+        for (Stadt stadt : liste) {
+            stadt.paint(g);
+        }
+    }
+
+    // Methode zum Zeichnen der Tour (Nearest Insertion)
+    public void paintNearestInsertion(Graphics g) {
+        if (tourNearestInsertion != null && tourNearestInsertion.length > 1) {
+            g.setColor(Color.GREEN);
+            for (int i = 0; i < currentStepNearestInsertion; i++) {
+                Stadt current = liste[tourNearestInsertion[i]];
+                Stadt next = liste[tourNearestInsertion[i + 1]];
+                g.drawLine(current.x, current.y, next.x, next.y);
+            }
+        }
+        for (Stadt stadt : liste) {
+            stadt.paint(g);
+        }
+    }
+
+    // Methode zur Überprüfung, ob die Tour vollständig ist (Nearest Neighbour)
+    public boolean isTourCompleteNearestNeighbour() {
+        return currentStepNearestNeighbour == tourNearestNeighbour.length - 1;
+    }
+
+    // Methode zur Überprüfung, ob die Tour vollständig ist (Nearest Insertion)
+    public boolean isTourCompleteNearestInsertion() {
+        return currentStepNearestInsertion == tourNearestInsertion.length - 1;
+    }
+
+    // Methode zum Finden des nächsten Nachbarn (Nearest Neighbour)
+    private int findNearestNeighbour(int currentIndex) {
+        Stadt current = liste[currentIndex];
+        double minDist = Double.MAX_VALUE;
+        int nearestIndex = -1;
+
+        for (int i = 0; i < liste.length; i++) {
+            if (i == currentIndex || liste[i].inTour)
+                continue;
+            double dist = distance(current, liste[i]);
+            if (dist < minDist) {
+                minDist = dist;
+                nearestIndex = i;
+            }
+        }
+        return nearestIndex;
     }
 
     // Methode zur Berechnung der Distanz zwischen zwei Städten
     private double distance(Stadt a, Stadt b) {
-        int dx = a.x - b.x; // Differenz in der x-Koordinate
-        int dy = a.y - b.y; // Differenz in der y-Koordinate
-        return Math.sqrt(dx * dx + dy * dy); // Euklidische Distanz
-    }
-
-    // Methode zum Fortschreiten zum nächsten Schritt der Tour
-    public void nextStep() {
-        if (currentStep < tour.length - 1) {
-            currentStep++; // Erhöhe den aktuellen Schritt
-        }
-    }
-
-    // Methode zum Zeichnen der Städte und der Tour
-    public void paint(Graphics g) {
-        // Zeichne die Linien der Tour bis zum aktuellen Schritt
-        if (tour != null && tour.length > 1) {
-            g.setColor(Color.BLUE); // Farbe für die Linien
-            for (int i = 0; i < currentStep; i++) {
-                Stadt current = liste[tour[i]]; // Aktuelle Stadt
-                Stadt next = liste[tour[i + 1]]; // Nächste Stadt
-                g.drawLine(current.x, current.y, next.x, next.y); // Zeichne eine Linie
-            }
-        }
-        // Zeichne alle Städte
-        for (Stadt stadt : liste) {
-            stadt.paint(g);
-        }
+        int dx = a.x - b.x;
+        int dy = a.y - b.y;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 }
