@@ -4,85 +4,71 @@ import java.awt.*;
 public class Anwendung {
 
     // Stadtlisten für beide Verfahren
-    private Stadtliste landNearestNeighbour;
-    private Stadtliste landNearestInsertion;
+    private final Stadtliste landNearestNeighbour;
+    private final Stadtliste landNearestInsertion;
 
     // Timer für die Animation
     private Timer timer;
 
     public Anwendung() {
-        // ------------------------------------------------------
-        // 1) Stadtlisten erzeugen und die Touren berechnen
-        // ------------------------------------------------------
+        // 1) Erzeuge beide Stadtlisten und berechne die Touren
         landNearestNeighbour = new Stadtliste();
         landNearestNeighbour.berechneTourNearestNeighbour();
 
         landNearestInsertion = new Stadtliste();
         landNearestInsertion.berechneTourNearestInsertion();
 
-        // ------------------------------------------------------
-        // 2) Erstes Fenster für Nearest Neighbour aufbauen
-        // ------------------------------------------------------
+        // 2) Erstelle erstes Fenster (Nearest Neighbour)
         JFrame nnFrame = new JFrame("TSP: Nearest Neighbour-Methode");
         nnFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         nnFrame.setSize(1000, 1000);
 
-        // Panel für Nearest Neighbour
+        // Panel für NN
         NearestNeighbourPanel nnPanel = new NearestNeighbourPanel(landNearestNeighbour);
         nnFrame.add(nnPanel);
 
-        // ------------------------------------------------------
-        // 3) Zweites Fenster für Nearest Insertion aufbauen
-        // ------------------------------------------------------
+        // 3) Erstelle zweites Fenster (Nearest Insertion)
         JFrame niFrame = new JFrame("TSP: Nearest Insertion-Methode");
         niFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         niFrame.setSize(1000, 1000);
 
-        // Panel für Nearest Insertion
+        // Panel für NI
         NearestInsertionPanel niPanel = new NearestInsertionPanel(landNearestInsertion);
         niFrame.add(niPanel);
 
-        // ------------------------------------------------------
-        // 4) Frames positionieren und sichtbar machen
-        // (damit sie sich nicht überlappen)
-        // ------------------------------------------------------
+        // 4) Platziere die Fenster nebeneinander (einfaches Beispiel)
         nnFrame.setLocation(100, 100);
         nnFrame.setVisible(true);
 
         niFrame.setLocation(nnFrame.getX() + nnFrame.getWidth() + 20, 100);
         niFrame.setVisible(true);
 
-        // ------------------------------------------------------
-        // 5) Timer für schrittweise Animation
-        // ------------------------------------------------------
+        // 5) Timer, der jede Sekunde einen Schritt macht
         timer = new Timer(1000, e -> {
-            // Schritt für Nearest Neighbour
+            // NN-Schritt
             boolean nnUpdated = landNearestNeighbour.nextStepNearestNeighbour();
             if (nnUpdated) {
-                nnPanel.repaint();
+                nnPanel.repaint(); // NN neu zeichnen
             }
 
-            // Schritt für Nearest Insertion
+            // NI-Schritt
             boolean niUpdated = landNearestInsertion.nextStepNearestInsertion();
             if (niUpdated) {
-                niPanel.repaint();
+                niPanel.repaint(); // NI neu zeichnen
             }
 
-            // Wenn beide Touren fertig sind, stoppen wir den Timer
+            // Wenn beide Touren fertig sind, Timer stoppen
             if (landNearestNeighbour.isTourCompleteNearestNeighbour()
                     && landNearestInsertion.isTourCompleteNearestInsertion()) {
                 timer.stop();
             }
         });
-
         timer.start();
     }
 
-    // -----------------------------------------------
-    // Panels als innere Klassen
-    // -----------------------------------------------
-
-    // Panel zum Zeichnen der Nearest-Neighbour-Tour
+    // ----------------------------------------------------------------
+    // Panel-Klasse für Nearest-Neighbour-Fenster
+    // ----------------------------------------------------------------
     private static class NearestNeighbourPanel extends JPanel {
         private final Stadtliste stadtliste;
 
@@ -94,12 +80,27 @@ public class Anwendung {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            // Zeichne die bisherige NN-Tour
+
+            // 1) NN-Tour zeichnen
             stadtliste.paintNearestNeighbour(g);
+
+            // 2) Textausgabe der aktuellen bzw. Gesamtstrecke
+            g.setColor(Color.BLACK);
+            if (!stadtliste.isTourCompleteNearestNeighbour()) {
+                // Noch nicht fertig --> aktuelle Länge
+                double currentLen = stadtliste.getCurrentLengthNN();
+                g.drawString(String.format("Aktuelle Länge: %.2f", currentLen), 10, 20);
+            } else {
+                // Tour vollständig --> Gesamtlänge
+                double totalLen = stadtliste.getTotalLengthNN();
+                g.drawString(String.format("Gesamtlänge: %.2f", totalLen), 10, 20);
+            }
         }
     }
 
-    // Panel zum Zeichnen der Nearest-Insertion-Tour
+    // ----------------------------------------------------------------
+    // Panel-Klasse für Nearest-Insertion-Fenster
+    // ----------------------------------------------------------------
     private static class NearestInsertionPanel extends JPanel {
         private final Stadtliste stadtliste;
 
@@ -111,14 +112,27 @@ public class Anwendung {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            // Zeichne die bisherige NI-Tour
+
+            // 1) NI-Tour zeichnen
             stadtliste.paintNearestInsertion(g);
+
+            // 2) Textausgabe der aktuellen bzw. Gesamtstrecke
+            g.setColor(Color.BLACK);
+            if (!stadtliste.isTourCompleteNearestInsertion()) {
+                // Noch nicht fertig --> aktuelle Länge
+                double currentLen = stadtliste.getCurrentLengthNI();
+                g.drawString(String.format("Aktuelle Länge: %.2f", currentLen), 10, 20);
+            } else {
+                // Tour vollständig --> Gesamtlänge
+                double totalLen = stadtliste.getTotalLengthNI();
+                g.drawString(String.format("Gesamtlänge: %.2f", totalLen), 10, 20);
+            }
         }
     }
 
-    // -----------------------------------------------
-    // main-Methode zum Starten der Anwendung
-    // -----------------------------------------------
+    // ----------------------------------------------------------------
+    // main-Methode zum Starten
+    // ----------------------------------------------------------------
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Anwendung::new);
     }
